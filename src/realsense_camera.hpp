@@ -12,7 +12,8 @@ cv::Mat frame_to_cv(rs2::video_frame frame)
 
 } // anonymous namespace
 
-class RealSenseCamera : public StereoCamera {
+class RealSenseCamera : public StereoCamera
+{
 public:
     explicit RealSenseCamera(
             const std::string& config_file_path,
@@ -24,6 +25,10 @@ public:
         , _frame_left {rs2::frame()}
         , _frame_right {rs2::frame()}
     {
+        if (_playback && _recording) {
+            throw std::runtime_error("Cannot record and play at the same time");
+        }
+
         _yaml_node["Camera.name"] = "RealSense D435";
         _yaml_node["Camera.setup"] = "stereo";
         _yaml_node["Camera.model"] = "perspective";
@@ -33,9 +38,11 @@ public:
         rs2::pipeline_profile pipe_profile = _pipe.start(_make_realsense_config());
 
         // Turn off IR projector
-        for (auto const& element : pipe_profile.get_device().query_sensors()) {
-            if (strcmp(element.get_info(RS2_CAMERA_INFO_NAME), "Stereo Module") == 0) {
-                element.set_option(rs2_option::RS2_OPTION_EMITTER_ENABLED, 0u);
+        if (!_playback) {
+            for (auto const& element : pipe_profile.get_device().query_sensors()) {
+                if (strcmp(element.get_info(RS2_CAMERA_INFO_NAME), "Stereo Module") == 0) {
+                    element.set_option(rs2_option::RS2_OPTION_EMITTER_ENABLED, 0u);
+                }
             }
         }
 
@@ -65,7 +72,13 @@ public:
 
     virtual bool end_of_frames(void) override
     {
-        return !_input_file_path.empty();
+        if (_playback) {
+            auto const& device = _pipe.get_active_profile().get_device().as<rs2::playback>();
+            auto position = device.get_position();
+            auto duration = static_cast<uint64_t>(device.get_duration().count());
+            return position >= duration;
+        }
+        return false;
     }
 
 private:
@@ -82,8 +95,18 @@ private:
         auto const fps = static_cast<int>(std::round(_yaml_node["Camera.fps"].as<float>()));
 
         rs2::config config;
-        config.enable_stream(RS2_STREAM_INFRARED, StreamIndex::Left, cols, rows, RS2_FORMAT_Y8, fps);
-        config.enable_stream(RS2_STREAM_INFRARED, StreamIndex::Right, cols, rows, RS2_FORMAT_Y8, fps);
+
+        if (_playback) {
+            config.enable_device_from_file(_input_file_path);
+        }
+        else {
+            config.enable_stream(RS2_STREAM_INFRARED, StreamIndex::Left, cols, rows, RS2_FORMAT_Y8, fps);
+            config.enable_stream(RS2_STREAM_INFRARED, StreamIndex::Right, cols, rows, RS2_FORMAT_Y8, fps);
+        }
+
+        if (_recording) {
+            config.enable_record_to_file(_output_file_path);
+        }
 
         return config;
     }

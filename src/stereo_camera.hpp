@@ -3,8 +3,8 @@
 #include <yaml.h>
 #include <opencv2/core/core.hpp>
 
-class StereoCamera {
-
+class StereoCamera
+{
 public:
     explicit StereoCamera(
             const std::string& config_file_path,
@@ -14,6 +14,8 @@ public:
         : _yaml_node {YAML::LoadFile(config_file_path)}
         , _input_file_path {input_file_path}
         , _output_file_path {output_file_path}
+        , _playback {!_input_file_path.empty()}
+        , _recording {!_output_file_path.empty()}
     {
     }
 
@@ -32,4 +34,6 @@ protected:
     YAML::Node _yaml_node;
     const std::string _input_file_path;
     const std::string _output_file_path;
+    const bool _playback;
+    const bool _recording;
 };
