@@ -1,0 +1,5 @@
+Debug
+build
+
+.ccls
+compile_commands.json
