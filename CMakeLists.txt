@@ -19,7 +19,8 @@ find_package(Eigen3 REQUIRED)
 
 find_package(GLEW REQUIRED)
 
-find_package(OpenCV REQUIRED)
+# OpenCV 3 for compatibility with MyntEye
+find_package(OpenCV 3 REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 find_package(yaml-cpp REQUIRED)
@@ -39,6 +40,11 @@ link_directories(${CUDA_LIBRARY_DIRS})
 
 find_package(realsense2 REQUIRED )
 include_directories(include ${realsense_INCLUDE_DIR})
+
+find_package(mynteye REQUIRED)
+message(STATUS "Found mynteye: ${mynteye_VERSION}")
+
+find_package(Boost REQUIRED COMPONENTS filesystem) # Required my MyntEye
 
 if(USE_BACKWARD)
     find_package(Backward REQUIRED)

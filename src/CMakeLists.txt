@@ -7,6 +7,7 @@ target_sources(camera_slam PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/stereo_camera.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/zed_camera.hpp
         ${CMAKE_CURRENT_SOURCE_DIR}/realsense_camera.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/mynteye_camera.hpp
         )
 
 add_executable(video_slam video_slam.cc)
@@ -17,7 +18,7 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
             RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
             )
 
-        target_link_libraries(${EXECUTABLE_TARGET} PUBLIC
+    target_link_libraries(${EXECUTABLE_TARGET} PUBLIC
         openvslam::openvslam
         openvslam::pangolin_viewer
         Eigen3::Eigen
@@ -27,6 +28,8 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
         ${OpenCV_LIBS}
         ${ZED_LIBS}
         ${realsense2_LIBRARY}
+        mynteye
+        Boost::filesystem
         )
 
     if(USE_BACKWARD)

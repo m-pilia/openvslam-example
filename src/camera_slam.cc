@@ -6,6 +6,7 @@
 
 #include "zed_camera.hpp"
 #include "realsense_camera.hpp"
+#include "mynteye_camera.hpp"
 
 #include <iostream>
 #include <algorithm>
@@ -349,7 +350,7 @@ int main(int argc, char* argv[])
             std::make_from_tuple<StereoSLAM<ZedCamera>>(args);
         }
         else if (camera_model->value() == "MYNT") {
-            throw std::runtime_error("NOT IMPLEMENTED");
+            std::make_from_tuple<StereoSLAM<MyntEyeCamera>>(args);
         }
         else if (camera_model->value() == "RealSense") {
             std::make_from_tuple<StereoSLAM<RealSenseCamera>>(args);
