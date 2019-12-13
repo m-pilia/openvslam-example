@@ -70,15 +70,15 @@ public:
         return true;
     }
 
-    virtual bool end_of_frames(void) override
+    virtual bool has_frames(void) override
     {
         if (_playback) {
             auto const& device = _pipe.get_active_profile().get_device().as<rs2::playback>();
             auto position = device.get_position();
             auto duration = static_cast<uint64_t>(device.get_duration().count());
-            return position >= duration;
+            return position < duration;
         }
-        return false;
+        return true;
     }
 
 private:

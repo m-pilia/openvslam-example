@@ -123,9 +123,9 @@ public:
         return true;
     }
 
-    virtual bool end_of_frames(void) override
+    virtual bool has_frames(void) override
     {
-        return !_input_file_path.empty() && (_zed.getSVOPosition() >= (_zed.getSVONumberOfFrames() - 1));
+        return !_input_file_path.empty() && (_zed.getSVOPosition() < (_zed.getSVONumberOfFrames() - 1));
     }
 
 private:

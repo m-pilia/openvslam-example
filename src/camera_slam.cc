@@ -190,7 +190,7 @@ private:
         cv::Mat frame_left, frame_right;
         double timestamp = 0.0;
 
-        while (true) {
+        while (_camera.has_frames()) {
             if (_slam.tracker_is_paused()) {
                 std::this_thread::sleep_for(std::chrono::microseconds(static_cast<unsigned int>(1e6 / _cfg->camera_->fps_)));
                 continue;
@@ -220,10 +220,6 @@ private:
             }
 
             ++num_frame;
-
-            if (_camera.end_of_frames()) {
-                break;
-            }
 
             // check if the termination of SLAM system is requested or not
             if (_slam.terminate_is_requested()) {
