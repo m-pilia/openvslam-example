@@ -29,7 +29,7 @@ public:
     /*!
      * \brief Grab a stereo image pair (from the camera or file playback).
      */
-    virtual bool grab(cv::Mat& frame_left, cv::Mat& frame_right, double& timestamp) = 0;
+    virtual bool grab(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& rgb, cv::Mat& depth, double& timestamp) = 0;
 
     /*!
      * \brief Return `true` if more frames are available to read.
@@ -43,6 +43,7 @@ protected:
     const std::string _output_file_path;
     const bool _playback;
     const bool _recording;
+    const bool _rgbd_mode;
 };
 
 } // namespace CameraSlam

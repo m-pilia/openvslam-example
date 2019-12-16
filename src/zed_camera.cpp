@@ -58,7 +58,6 @@ ZedCamera::ZedCamera(
     : StereoCamera(config_file_path, input_svo_file_path, output_svo_file_path)
 {
     _yaml_node["Camera.name"] = "ZED";
-    _yaml_node["Camera.setup"] = "stereo";
     _yaml_node["Camera.model"] = "perspective";
     _yaml_node["Camera.color_order"] = "RGB";
 
@@ -94,7 +93,7 @@ void ZedCamera::cleanup(void)
     _zed.close();
 }
 
-bool ZedCamera::grab(cv::Mat& frame_left, cv::Mat& frame_right, double& timestamp)
+bool ZedCamera::grab(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& rgb, cv::Mat& depth, double& timestamp)
 {
     if (_zed.grab() != sl::SUCCESS) {
         return false;
@@ -107,13 +106,17 @@ bool ZedCamera::grab(cv::Mat& frame_left, cv::Mat& frame_right, double& timestam
         }
     }
 
-    if (_zed.retrieveImage(_frame_left, sl::VIEW_LEFT_GRAY) != sl::SUCCESS ||
-        _zed.retrieveImage(_frame_right, sl::VIEW_RIGHT_GRAY) != sl::SUCCESS) {
+    if ((_zed.retrieveImage(_frame_left, sl::VIEW_LEFT_GRAY) != sl::SUCCESS) ||
+        (_zed.retrieveImage(_frame_right, sl::VIEW_RIGHT_GRAY) != sl::SUCCESS) ||
+        (_zed.retrieveImage(_rgb, sl::VIEW_LEFT) != sl::SUCCESS) ||
+        (_zed.retrieveImage(_depth, sl::VIEW_DEPTH) != sl::SUCCESS)) {
         return false;
     }
 
     frame_left = slMat2cvMat(_frame_left);
     frame_right = slMat2cvMat(_frame_right);
+    rgb = slMat2cvMat(_rgb);
+    depth = slMat2cvMat(_depth);
     timestamp = _timestamp();
     return true;
 }

@@ -29,7 +29,7 @@ public:
             );
 
     virtual void cleanup(void) override;
-    virtual bool grab(cv::Mat& frame_left, cv::Mat& frame_right, double& timestamp) override;
+    virtual bool grab(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& rgb, cv::Mat& depth, double& timestamp) override;
     virtual bool has_frames(void) override;
 
 private:
@@ -40,6 +40,8 @@ private:
     sl::Camera _zed;
     sl::Mat _frame_left;
     sl::Mat _frame_right;
+    sl::Mat _rgb;
+    sl::Mat _depth;
 };
 
 } // namespace CameraSlam

@@ -13,6 +13,7 @@ StereoCamera::StereoCamera(
     , _output_file_path {output_file_path}
     , _playback {!_input_file_path.empty()}
     , _recording {!_output_file_path.empty()}
+    , _rgbd_mode {_yaml_node["Camera.setup"].as<std::string>() == "RGBD"}
 {
 }
 

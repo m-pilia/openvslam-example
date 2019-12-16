@@ -16,11 +16,12 @@ public:
             );
 
     virtual void cleanup(void) override;
-    virtual bool grab(cv::Mat& frame_left, cv::Mat& frame_right, double& timestamp) override;
+    virtual bool grab(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& rgb, cv::Mat& depth, double& timestamp) override;
     virtual bool has_frames(void) override;
 
 private:
     enum StreamIndex {
+        Depth = 0,
         Left = 1,
         Right = 2,
     };
@@ -31,6 +32,9 @@ private:
     rs2::pipeline _pipe;
     rs2::video_frame _frame_left;
     rs2::video_frame _frame_right;
+    rs2::video_frame _rgb;
+    rs2::video_frame _depth;
+    float _depth_scale;
 };
 
 } // namespace CameraSlam

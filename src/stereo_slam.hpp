@@ -143,9 +143,10 @@ private:
 
     void _slam_loop(void)
     {
+        const bool rgbd_mode = _cfg->yaml_node_["Camera.setup"].as<std::string>() == "RGBD";
         unsigned int num_frame = 0;
         double track_time = 0.0;
-        cv::Mat frame_left, frame_right;
+        cv::Mat frame_left, frame_right, rgb, depth;
         double timestamp = 0.0;
 
         while (_camera.has_frames()) {
@@ -154,7 +155,7 @@ private:
                 continue;
             }
 
-            if (!_camera.grab(frame_left, frame_right, timestamp)) {
+            if (!_camera.grab(frame_left, frame_right, rgb, depth, timestamp)) {
                 spdlog::warn("Failed to grab frame at time {0}", timestamp);
                 std::this_thread::sleep_for(std::chrono::microseconds(static_cast<unsigned int>(1e6 / _cfg->camera_->fps_)));
                 continue;
@@ -162,7 +163,12 @@ private:
 
             // input the current frame and estimate the camera pose
             if (num_frame % _frame_skip == 0) {
-                track_time = timeit([&]() {_slam.feed_stereo_frame(frame_left, frame_right, timestamp);});
+                if (rgbd_mode) {
+                    track_time = timeit([&]() {_slam.feed_RGBD_frame(rgb, depth, timestamp);});
+                }
+                else {
+                    track_time = timeit([&]() {_slam.feed_stereo_frame(frame_left, frame_right, timestamp);});
+                }
             }
 
             if (num_frame % _frame_skip == 0) {
