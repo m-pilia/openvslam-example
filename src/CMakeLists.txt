@@ -4,10 +4,17 @@ add_executable(camera_slam camera_slam.cc)
 list(APPEND EXECUTABLE_TARGETS camera_slam)
 
 target_sources(camera_slam PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/stereo_camera.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/zed_camera.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/realsense_camera.hpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/mynteye_camera.hpp
+        mynteye_camera.cpp
+        mynteye_camera.hpp
+        realsense_camera.cpp
+        realsense_camera.hpp
+        stack_trace.cpp
+        stack_trace.hpp
+        stereo_camera.cpp
+        stereo_camera.hpp
+        stereo_slam.hpp
+        zed_camera.cpp
+        zed_camera.hpp
         )
 
 add_executable(video_slam video_slam.cc)
