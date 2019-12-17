@@ -1,10 +1,6 @@
 #include "mynteye_camera.hpp"
 
-#include <chrono>
-
 #include <opencv2/imgproc.hpp>
-
-using namespace std::chrono_literals;
 
 namespace CameraSlam {
 
@@ -23,8 +19,6 @@ MyntEyeCamera::MyntEyeCamera(
     , _input_file {_playback ? std::make_unique<std::ifstream>(_input_file_path, std::ios::binary) : nullptr}
     , _output_file {_recording ? std::make_unique<std::ofstream>(_output_file_path, std::ios::binary) : nullptr}
     , _has_frames {true}
-    , _discard_old_image_thread {[&]() {_discard_old_image();}}
-    , _is_running {true}
 {
     if (!_playback && !_api) {
         throw std::runtime_error("Failed to create MyntEye API");
@@ -60,11 +54,6 @@ MyntEyeCamera::MyntEyeCamera(
         _api->EnableStreamData(mynteye::Stream::RIGHT_RECTIFIED);
         _api->EnableStreamData(mynteye::Stream::DISPARITY);
 
-        // Set callbacks to handle data from the camera
-        _api->SetStreamCallback(mynteye::Stream::LEFT_RECTIFIED, [&](auto data) {_handle_image(data, DataType::LEFT);});
-        _api->SetStreamCallback(mynteye::Stream::RIGHT_RECTIFIED, [&](auto data) {_handle_image(data, DataType::RIGHT);});
-        _api->SetStreamCallback(mynteye::Stream::DISPARITY, [&](auto data) {_handle_image(data, DataType::DEPTH);});
-
         // Turn off IR projector
         auto const&& ir_range = _api->GetOptionInfo(mynteye::Option::IR_CONTROL);
         _api->SetOptionValue(mynteye::Option::IR_CONTROL, ir_range.min);
@@ -73,11 +62,8 @@ MyntEyeCamera::MyntEyeCamera(
     }
 }
 
-
 MyntEyeCamera::~MyntEyeCamera()
 {
-    _is_running = false;
-    _discard_old_image_thread.join();
     cleanup();
 }
 
@@ -93,12 +79,42 @@ void MyntEyeCamera::cleanup(void)
 
 bool MyntEyeCamera::grab(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& rgb, cv::Mat& depth, double& timestamp)
 {
-    if (_playback && !_read_image_frame()) {
-        return false;
+    uint64_t ts;
+
+    if (_playback) {
+        DataType data_type;
+        if (!_read_datum(frame_left, ts, data_type) || data_type != DataType::LEFT ||
+            !_read_datum(frame_right, ts, data_type) || data_type != DataType::RIGHT ||
+            !_read_datum(depth, ts, data_type) || data_type != DataType::DEPTH) {
+            _has_frames = false;
+            return false;
+        }
+    }
+    else {
+        _api->WaitForStreams();
+
+        _left_data = _api->GetStreamData(mynteye::Stream::LEFT_RECTIFIED);
+        _right_data = _api->GetStreamData(mynteye::Stream::RIGHT_RECTIFIED);
+        _depth_data = _api->GetStreamData(mynteye::Stream::DISPARITY);
+
+        if (_left_data.frame.empty() || _right_data.frame.empty() || _depth_data.frame.empty()) {
+            return false;
+        }
+
+        frame_left = _left_data.frame;
+        frame_right = _right_data.frame;
+        depth = _focal_baseline / _depth_data.frame;
+        cv::cvtColor(frame_left, rgb, cv::COLOR_GRAY2RGB);
+        ts = _left_data.img->timestamp;
+
+        if (_recording) {
+            _write_to_file(frame_left, _left_data.img->timestamp, DataType::LEFT);
+            _write_to_file(frame_right, _left_data.img->timestamp, DataType::RIGHT);
+            _write_to_file(depth, _left_data.img->timestamp, DataType::DEPTH);
+        }
     }
 
-    _dequeue_image_frame(frame_left, frame_right, depth, timestamp);
-    cv::cvtColor(frame_left, rgb, cv::COLOR_GRAY2RGB);
+    timestamp = static_cast<double>(ts) / 1e6;
     return true;
 }
 
@@ -171,70 +187,6 @@ void MyntEyeCamera::_read_camera_calibration(void)
     auto const extrinsics = _api->GetExtrinsics(mynteye::Stream::LEFT, mynteye::Stream::RIGHT);
     _focal_baseline = 1e-3 * extrinsics.translation[0] * _yaml_node["Camera.fx"].as<double>();
     _yaml_node["Camera.focal_x_baseline"] = _focal_baseline;
-}
-
-/*!
- * \brief Add a datum (image or IMU) to the queue.
- */
-void MyntEyeCamera::_enqueue(const cv::Mat& image, const uint64_t timestamp, const DataType data_type)
-{
-    {
-        std::scoped_lock lock {_mtx_queue};
-        switch (data_type)
-        {
-            case DataType::LEFT:
-                _queue_left.emplace(image, timestamp);
-                break;
-            case DataType::RIGHT:
-                _queue_right.emplace(image, timestamp);
-                break;
-            case DataType::DEPTH:
-                _queue_depth.emplace(image, timestamp);
-                break;
-            case DataType::IMU:
-                throw std::runtime_error("NOT IMPLEMENTED");
-                break;
-        }
-    }
-    _condition_variable_queue.notify_one();
-    _condition_variable_discard.notify_one();
-}
-
-/*!
- * \brief Extract a stereo pair from the image queues.
- */
-void MyntEyeCamera::_dequeue_image_frame(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& depth, double& timestamp)
-{
-    std::unique_lock lock {_mtx_queue};
-    _condition_variable_queue.wait(lock, [&]() {return _frame_ready();});
-    frame_left = _queue_left.front().image;
-    frame_right = _queue_right.front().image;
-    depth = _queue_depth.front().image;
-    timestamp = static_cast<double>(_queue_right.front().timestamp) / 1e6;
-    _queue_left.pop();
-    _queue_right.pop();
-    _queue_depth.pop();
-}
-
-/*!
- * \brief Callback to handle frame image data.
- */
-void MyntEyeCamera::_handle_image(const mynteye::api::StreamData& data, const DataType data_type)
-{
-    if (data.frame.empty()) {
-        return;
-    }
-
-    // Convert disparity to depth
-    const auto& image = (data_type == DataType::DEPTH) ? (_focal_baseline / data.frame) : data.frame;
-
-    // Enqueue image
-    _enqueue(image, data.img->timestamp, data_type);
-
-    // Write to file
-    if (_recording) {
-        _write_to_file(image, data.img->timestamp, data_type);
-    }
 }
 
 /*!
@@ -326,83 +278,6 @@ bool MyntEyeCamera::_read_datum(cv::Mat& image, uint64_t& timestamp, DataType& d
     return true;
 }
 
-/*!
- * \brief Read image pair from file.
- */
-bool MyntEyeCamera::_read_image_frame(void)
-{
-    while (_frame_not_queued())
-    {
-        cv::Mat frame;
-        uint64_t timestamp;
-        DataType data_type;
-        if (!_read_datum(frame, timestamp, data_type)) {
-            _has_frames = false;
-            return false;
-        }
 
-        _enqueue(frame, timestamp, data_type);
-    }
-    return true;
-}
-
-/*!
- * \brief Handle dropped frames.
- *
- * If a stereo image or depth is not matched with its corresponding ones
- * after `_queue_max_length` images were read, drop it.
- */
-void MyntEyeCamera::_discard_old_image(void)
-{
-    while (_is_running) {
-        std::unique_lock lock {_mtx_queue};
-        _condition_variable_discard.wait_for(lock, 1s, [&]{return _is_long_queue();});
-
-        bool not_empty = !(_queue_left.empty() || _queue_right.empty() || _queue_depth.empty());
-        bool mismatching = (_queue_left.front().timestamp != _queue_right.front().timestamp) ||
-                           (_queue_left.front().timestamp != _queue_depth.front().timestamp);
-
-        while (not_empty && mismatching) {
-            auto const cmp = [](auto const& l, auto const& r) {return l.front().timestamp < r.front().timestamp;};
-            std::min({_queue_left, _queue_right, _queue_depth}, cmp).pop();
-        }
-    }
-}
-
-/*!
- * \brief Return `true` if all images of a frame are ready in the queues.
- *
- * This function is not thread safe. It can be called while the
- * `_mtx_queue` is already being hold.
- */
-bool MyntEyeCamera::_frame_ready(void)
-{
-    bool not_ready = _queue_left.empty() || _queue_right.empty() || _queue_depth.empty() ||
-        (_queue_left.front().timestamp != _queue_right.front().timestamp) ||
-        (_queue_left.front().timestamp != _queue_depth.front().timestamp);
-    return !not_ready;
-}
-
-/*!
- * \brief Return `true` if not all images of a frame are ready in the queues.
- *
- * This function is thread safe.
- */
-
-bool MyntEyeCamera::_frame_not_queued(void)
-{
-    std::scoped_lock lock {_mtx_queue};
-    return !_frame_ready();
-}
-
-/*!
- * \brief Return `true` if many frames are queued.
- */
-bool MyntEyeCamera::_is_long_queue(void)
-{
-    return (_queue_left.size() > _queue_max_length) ||
-        (_queue_right.size() > _queue_max_length) ||
-        (_queue_depth.size() > _queue_max_length);
-}
 
 } // namespace CameraSlam
