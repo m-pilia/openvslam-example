@@ -26,6 +26,7 @@ MyntEyeCamera::MyntEyeCamera(
 
     _yaml_node["Camera.name"] = "MYNT EYE S1030-IR";
     _yaml_node["Camera.model"] = "perspective";
+    _yaml_node["Camera.setup"] = "stereo";
     _yaml_node["Camera.color_order"] = "Gray";
     _yaml_node["Camera.rows"] = _stream_request.height;
     _yaml_node["Camera.cols"] = _stream_request.width;

@@ -37,13 +37,17 @@ public:
     virtual bool has_frames(void) = 0;
 
 protected:
+    typedef enum {RGBD, FISHEYE, PERSPECTIVE} Mode;
     YAML::Node _yaml_node;
     const std::string _config_file_path;
     const std::string _input_file_path;
     const std::string _output_file_path;
     const bool _playback;
     const bool _recording;
-    const bool _rgbd_mode;
+    const Mode _mode;
+
+private:
+    Mode _get_mode(void);
 };
 
 } // namespace CameraSlam

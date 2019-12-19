@@ -2,4 +2,5 @@ Debug
 build
 
 .ccls
+.vscode
 compile_commands.json

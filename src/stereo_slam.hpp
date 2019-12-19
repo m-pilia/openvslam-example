@@ -11,6 +11,7 @@
 #include <openvslam/camera/perspective.h>
 #include <openvslam/config.h>
 #include <openvslam/system.h>
+#include <openvslam/util/stereo_rectifier.h>
 
 #include <iostream>
 #include <algorithm>
@@ -69,6 +70,7 @@ public:
         , _track_times {}
         , _slam(_cfg, _vocab_file_path)
         , _viewer(_cfg, &_slam, _slam.get_frame_publisher(), _slam.get_map_publisher())
+        , _rectifier(_cfg->yaml_node_["StereoRectifier.model"].IsDefined() ? std::make_unique<openvslam::util::stereo_rectifier>(_cfg) : nullptr)
     {
         spdlog::info("Opened {0} camera {1}x{2} @ {3} FPS", _cfg->camera_->name_, _cfg->camera_->cols_, _cfg->camera_->rows_, _cfg->camera_->fps_);
         spdlog::info("Running in {0} mode", _cfg->camera_->setup_type_ == openvslam::camera::setup_type_t::Stereo ? "stereo" : "mono");
@@ -167,6 +169,12 @@ private:
                     track_time = timeit([&]() {_slam.feed_RGBD_frame(rgb, depth, timestamp);});
                 }
                 else {
+                    if (_rectifier) {
+                        cv::Mat frame_left_rect, frame_right_rect;
+                        _rectifier->rectify(frame_left, frame_right, frame_left_rect, frame_right_rect);
+                        frame_left = frame_left_rect;
+                        frame_right = frame_right_rect;
+                    }
                     track_time = timeit([&]() {_slam.feed_stereo_frame(frame_left, frame_right, timestamp);});
                 }
             }
@@ -221,6 +229,7 @@ private:
     std::vector<double> _track_times;
     openvslam::system _slam;
     pangolin_viewer::viewer _viewer;
+    const std::unique_ptr<openvslam::util::stereo_rectifier> _rectifier;
 };
 
 } // namespace CameraSlam

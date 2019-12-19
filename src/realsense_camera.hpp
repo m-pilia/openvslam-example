@@ -26,9 +26,20 @@ private:
         Right = 2,
     };
 
+    constexpr static struct {
+        const int rows;
+        const int cols;
+        const float fps;
+        const rs2_format format;
+    } T265 = {800, 848, 30.0f, RS2_FORMAT_Y8};
+
     rs2::config _make_realsense_config(void);
     void _read_camera_calibration(void);
+    rs2_stream _get_stream_type(void);
+    rs2_intrinsics _get_intrinsics(const StreamIndex stream_index);
+    rs2_extrinsics _get_extrinsics(void);
 
+    rs2::context _context;
     rs2::pipeline _pipe;
     rs2::video_frame _frame_left;
     rs2::video_frame _frame_right;
