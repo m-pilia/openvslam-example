@@ -17,9 +17,6 @@ target_sources(camera_slam PRIVATE
         zed_camera.hpp
         )
 
-add_executable(video_slam video_slam.cc)
-list(APPEND EXECUTABLE_TARGETS video_slam)
-
 foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
     set_target_properties(${EXECUTABLE_TARGET} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
