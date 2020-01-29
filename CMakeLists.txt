@@ -17,6 +17,8 @@ find_package(openvslam REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 
+find_package(PNG REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 
 # OpenCV 3 for compatibility with MyntEye
@@ -29,7 +31,7 @@ include_directories(${yaml-cpp_INCLUDE_DIRS})
 find_package(spdlog REQUIRED)
 include_directories(${spdlog_INCLUDE_DIR})
 
-find_package(ZED 2 REQUIRED)
+find_package(ZED 3 REQUIRED)
 include_directories(${ZED_INCLUDE_DIRS})
 link_directories(${ZED_LIBRARY_DIR})
 set(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_NPP_LIBRARIES_ZED})

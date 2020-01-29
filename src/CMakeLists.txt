@@ -26,6 +26,7 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
             )
 
     target_link_libraries(${EXECUTABLE_TARGET} PUBLIC
+        m
         openvslam::openvslam
         openvslam::pangolin_viewer
         Eigen3::Eigen
@@ -37,6 +38,7 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
         ${realsense2_LIBRARY}
         mynteye
         Boost::filesystem
+        ${OPENGL_gl_LIBRARY}
         )
 
     if(USE_BACKWARD)

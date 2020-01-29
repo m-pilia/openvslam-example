@@ -20,30 +20,22 @@ namespace {
  *
  * \note The `frame` object retains ownership of the image buffer.
  **/
-cv::Mat slMat2cvMat(sl::Mat& input)
-{
-    // Mapping between MAT_TYPE and CV_TYPE
+cv::Mat slMat2cvMat(sl::Mat &input) {
     int cv_type = -1;
     switch (input.getDataType()) {
-        case sl::MAT_TYPE_32F_C1: cv_type = CV_32FC1; break;
-        case sl::MAT_TYPE_32F_C2: cv_type = CV_32FC2; break;
-        case sl::MAT_TYPE_32F_C3: cv_type = CV_32FC3; break;
-        case sl::MAT_TYPE_32F_C4: cv_type = CV_32FC4; break;
-        case sl::MAT_TYPE_8U_C1: cv_type = CV_8UC1; break;
-        case sl::MAT_TYPE_8U_C2: cv_type = CV_8UC2; break;
-        case sl::MAT_TYPE_8U_C3: cv_type = CV_8UC3; break;
-        case sl::MAT_TYPE_8U_C4: cv_type = CV_8UC4; break;
+        case sl::MAT_TYPE::F32_C1: cv_type = CV_32FC1; break;
+        case sl::MAT_TYPE::F32_C2: cv_type = CV_32FC2; break;
+        case sl::MAT_TYPE::F32_C3: cv_type = CV_32FC3; break;
+        case sl::MAT_TYPE::F32_C4: cv_type = CV_32FC4; break;
+        case sl::MAT_TYPE::U8_C1: cv_type = CV_8UC1; break;
+        case sl::MAT_TYPE::U8_C2: cv_type = CV_8UC2; break;
+        case sl::MAT_TYPE::U8_C3: cv_type = CV_8UC3; break;
+        case sl::MAT_TYPE::U8_C4: cv_type = CV_8UC4; break;
         default: break;
     }
-
     // Since cv::Mat data requires a uchar* pointer, we get the uchar1 pointer from sl::Mat (getPtr<T>())
     // cv::Mat and sl::Mat will share a single memory structure
-    return cv::Mat(
-            static_cast<int>(input.getHeight()),
-            static_cast<int>(input.getWidth()),
-            cv_type,
-            input.getPtr<sl::uchar1>(sl::MEM_CPU)
-            );
+    return cv::Mat(input.getHeight(), input.getWidth(), cv_type, input.getPtr<sl::uchar1>(sl::MEM::CPU));
 }
 
 } // anonymous namespace
@@ -65,21 +57,22 @@ ZedCamera::ZedCamera(
 
     // Playback from file
     if (!_input_file_path.empty()) {
-        param.svo_input_filename = sl::String(_input_file_path.data());
+        param.input.setFromSVOFile(sl::String(_input_file_path.data()));
         spdlog::info("Playback from file {0}", _input_file_path);
     }
 
     // Open the camera
     auto const err = _zed.open(param);
-    if (err != sl::SUCCESS) {
+    if (err != sl::ERROR_CODE::SUCCESS) {
         _zed.close();
         throw std::runtime_error(toString(err));
     }
 
     // Enable recording mode
     if (!_output_file_path.empty()) {
-        auto const err = _zed.enableRecording(sl::String(_output_file_path.data()), sl::SVO_COMPRESSION_MODE_LOSSLESS);
-        if (err != sl::SUCCESS) {
+        const sl::RecordingParameters recording_parameters (sl::String(_output_file_path.data()), sl::SVO_COMPRESSION_MODE::LOSSLESS);
+        auto const err = _zed.enableRecording(recording_parameters);
+        if (err != sl::ERROR_CODE::SUCCESS) {
             throw std::runtime_error("Cannot open output file " + _output_file_path);
         }
     }
@@ -95,21 +88,18 @@ void ZedCamera::cleanup(void)
 
 bool ZedCamera::grab(cv::Mat& frame_left, cv::Mat& frame_right, cv::Mat& rgb, cv::Mat& depth, double& timestamp)
 {
-    if (_zed.grab() != sl::SUCCESS) {
+    if (_zed.grab() != sl::ERROR_CODE::SUCCESS) {
         return false;
     }
 
-    if (!_output_file_path.empty()) {
-        auto const rs = _zed.record();
-        if (!rs.status) {
-            throw std::runtime_error("Error writing frame to " + _output_file_path);
-        }
+    if (!_output_file_path.empty() && !_zed.getRecordingStatus().status) {
+        spdlog::info("Error writing frame to {0}", _output_file_path);
     }
 
-    if ((_zed.retrieveImage(_frame_left, sl::VIEW_LEFT_GRAY) != sl::SUCCESS) ||
-        (_zed.retrieveImage(_frame_right, sl::VIEW_RIGHT_GRAY) != sl::SUCCESS) ||
-        (_zed.retrieveImage(_rgb, sl::VIEW_LEFT) != sl::SUCCESS) ||
-        (_zed.retrieveImage(_depth, sl::VIEW_DEPTH) != sl::SUCCESS)) {
+    if ((_zed.retrieveImage(_frame_left, sl::VIEW::LEFT_GRAY) != sl::ERROR_CODE::SUCCESS) ||
+        (_zed.retrieveImage(_frame_right, sl::VIEW::RIGHT_GRAY) != sl::ERROR_CODE::SUCCESS) ||
+        (_zed.retrieveImage(_rgb, sl::VIEW::LEFT) != sl::ERROR_CODE::SUCCESS) ||
+        (_zed.retrieveImage(_depth, sl::VIEW::DEPTH) != sl::ERROR_CODE::SUCCESS)) {
         return false;
     }
 
@@ -128,7 +118,7 @@ bool ZedCamera::has_frames(void)
 
 double ZedCamera::_timestamp(void)
 {
-    return static_cast<double>(_zed.getTimestamp(sl::TIME_REFERENCE_IMAGE)) / 1e9;
+    return static_cast<double>(_zed.getTimestamp(sl::TIME_REFERENCE::IMAGE)) / 1e9;
 }
 
 sl::InitParameters ZedCamera::_make_zed_parameters(void)
@@ -141,19 +131,19 @@ sl::InitParameters ZedCamera::_make_zed_parameters(void)
     auto const fps = static_cast<int>(std::round(_yaml_node["Camera.fps"].as<float>()));
     bool invalid_fps = false;
     if (cols == 376 && rows == 672) {
-        param.camera_resolution = sl::RESOLUTION_VGA;
+        param.camera_resolution = sl::RESOLUTION::VGA;
         invalid_fps = (fps != 15 && fps != 30 && fps != 60 && fps != 100);
     }
     else if (cols == 1280 && rows == 720) {
-        param.camera_resolution = sl::RESOLUTION_HD720;
+        param.camera_resolution = sl::RESOLUTION::HD720;
         invalid_fps = (fps != 15 && fps != 30 && fps != 60);
     }
     else if (cols == 1920 && rows == 1080) {
-        param.camera_resolution = sl::RESOLUTION_HD1080;
+        param.camera_resolution = sl::RESOLUTION::HD1080;
         invalid_fps = (fps != 15 && fps != 30);
     }
     else if (cols == 2208 && rows == 1242) {
-        param.camera_resolution = sl::RESOLUTION_HD2K;
+        param.camera_resolution = sl::RESOLUTION::HD2K;
         invalid_fps = (fps != 15);
     }
     else {
@@ -166,7 +156,7 @@ sl::InitParameters ZedCamera::_make_zed_parameters(void)
                 + " at resolution" + std::to_string(rows) + "x" + std::to_string(cols));
     }
     param.camera_fps = fps;
-    param.coordinate_units = sl::UNIT_METER;
+    param.coordinate_units = sl::UNIT::METER;
 
     return param;
 }

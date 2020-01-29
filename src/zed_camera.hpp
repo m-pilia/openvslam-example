@@ -9,6 +9,10 @@
     #pragma GCC diagnostic ignored "-Wreorder"
     #pragma GCC diagnostic ignored "-Wignored-qualifiers"
     #pragma GCC diagnostic ignored "-Wpedantic"
+
+    #if __GNUC__ >= 9
+        #pragma GCC diagnostic ignored "-Wdeprecated-copy"
+    #endif
 #endif // defined(__GNUC__) || defined(__clang__)
 
 #include <sl/Camera.hpp>
