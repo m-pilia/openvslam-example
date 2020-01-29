@@ -28,9 +28,12 @@ foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
         openvslam::pangolin_viewer
         Eigen3::Eigen
         yaml-cpp
+        opencv_calib3d
         opencv_core
+        opencv_features2d
+        opencv_highgui
+        opencv_imgcodecs
         ${GLEW_LIBRARIES}
-        ${OpenCV_LIBS}
         ${ZED_LIBS}
         ${realsense2_LIBRARY}
         mynteye
