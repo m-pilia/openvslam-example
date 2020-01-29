@@ -28,9 +28,6 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(yaml-cpp REQUIRED)
 include_directories(${yaml-cpp_INCLUDE_DIRS})
 
-find_package(spdlog REQUIRED)
-include_directories(${spdlog_INCLUDE_DIR})
-
 find_package(ZED 3 REQUIRED)
 include_directories(${ZED_INCLUDE_DIRS})
 link_directories(${ZED_LIBRARY_DIR})
@@ -53,6 +50,7 @@ if(USE_BACKWARD)
     add_definitions(-DUSE_BACKWARD)
 endif()
 
+include_directories(third_party/spdlog/include)
 include_directories(third_party/popl/include)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
