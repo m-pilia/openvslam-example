@@ -1,0 +1,39 @@
+name: Checks
+
+on: push
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Build
+      env:
+        image: martinopilia/openvslam-example-env:latest
+      run: |
+        git submodule update --init --recursive
+        docker pull ${image} || docker build --rm -t ${image} -f Dockerfile .
+        docker run \
+            --rm \
+            -v "$(pwd)":/mnt \
+            ${image} \
+            bash -c '\
+                set -xeuo pipefail && \
+                mkdir -p /mnt/build && \
+                cd /mnt/build && \
+                cmake .. && \
+                make -j"$(nproc)" \
+            '
+
+  Hadolint:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+    - name: Lint
+      run: |
+        find . \
+            -type f \
+            -name 'Dockerfile*' \
+            -exec docker run --rm -i -v "$(pwd)":/mnt -w /mnt hadolint/hadolint:v1.17.2 hadolint '{}' \;

@@ -1,0 +1,228 @@
+FROM stereolabs/zed:3.0-gl-devel-cuda10.2-ubuntu18.04
+
+LABEL maintainer="Martino Pilia <martino.pilia@gmail.com>"
+
+SHELL ["/bin/bash", "-x", "-o", "pipefail", "-c"]
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# hadolint ignore=DL3008
+RUN apt-get update -y \
+&&  apt-get install -y --no-install-recommends \
+        build-essential \
+        ccache \
+        clang-format-6.0 \
+        cmake \
+        curl \
+        ffmpeg \
+        git \
+        libatlas-base-dev \
+        libavcodec-dev \
+        libavformat-dev \
+        libavresample-dev \
+        libavutil-dev \
+        libboost-filesystem-dev \
+        libeigen3-dev \
+        libglew-dev \
+        libgoogle-glog-dev \
+        libjpeg-dev \
+        libopencv-dev \
+        libopenexr-dev \
+        libpng++-dev \
+        libsuitesparse-dev \
+        libswscale-dev \
+        libtiff-dev \
+        libwebp-dev \
+        libyaml-cpp-dev \
+        pkg-config \
+        software-properties-common \
+        wget \
+&&  apt-get autoremove -y -qq \
+&&  rm -rf /var/lib/apt/lists/*
+
+ARG CMAKE_INSTALL_PREFIX=/usr/local
+
+ENV CPATH=${CMAKE_INSTALL_PREFIX}/include:${CPATH}
+ENV C_INCLUDE_PATH=${CMAKE_INSTALL_PREFIX}/include:${C_INCLUDE_PATH}
+ENV CPLUS_INCLUDE_PATH=${CMAKE_INSTALL_PREFIX}/include:${CPLUS_INCLUDE_PATH}
+ENV LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:${LIBRARY_PATH}
+ENV LD_LIBRARY_PATH=${CMAKE_INSTALL_PREFIX}/lib:${LD_LIBRARY_PATH}
+
+WORKDIR /tmp
+
+# g2o
+# hadolint ignore=DL3003
+RUN git clone https://github.com/RainerKuemmerle/g2o.git \
+&&  cd g2o \
+&&  mkdir -p build \
+&&  cd build \
+&&  cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_UNITTESTS=OFF \
+        -DBUILD_WITH_MARCH_NATIVE=ON \
+        -DG2O_USE_CHOLMOD=ON \
+        -DG2O_USE_CSPARSE=ON \
+        -DG2O_USE_OPENGL=OFF \
+        -DG2O_USE_OPENMP=ON \
+        -DG2O_BUILD_APPS=OFF \
+        -DG2O_BUILD_EXAMPLES=OFF \
+        -DG2O_BUILD_LINKED_APPS=OFF \
+        .. \
+&&  make -j"$(nproc)" \
+&&  make install \
+&&  cd /tmp \
+&&  rm -rf ./*
+ENV G2O_ROOT=${CMAKE_INSTALL_PREFIX}
+
+# OpenCV
+ARG OPENCV_VERSION=3.4.7
+# hadolint ignore=DL3003
+RUN git clone https://github.com/opencv/opencv.git /tmp/opencv \
+&&  git clone https://github.com/opencv/opencv_contrib.git /tmp/opencv_contrib \
+&&  git --work-tree=/tmp/opencv --git-dir=/tmp/opencv/.git checkout "${OPENCV_VERSION}" \
+&&  git --work-tree=/tmp/opencv_contrib --git-dir=/tmp/opencv_contrib/.git checkout "${OPENCV_VERSION}" \
+&&  mkdir -p /tmp/opencv/build \
+&&  cd /tmp/opencv/build \
+&&  cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} \
+        -DOPENCV_EXTRA_MODULES_PATH=/tmp/opencv_contrib/modules \
+        -DBUILD_DOCS=OFF \
+        -DBUILD_EXAMPLES=OFF \
+        -DBUILD_JASPER=OFF \
+        -DBUILD_OPENEXR=OFF \
+        -DBUILD_PERF_TESTS=OFF \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_opencv_python_bindings_generator=OFF \
+        -DENABLE_CXX11=ON \
+        -DENABLE_FAST_MATH=ON \
+        -DWITH_EIGEN=ON \
+        -DWITH_FFMPEG=ON \
+        -DWITH_OPENMP=ON \
+        -DWITH_CUDA=OFF \
+        -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-10.2 \
+        -DCUDA_CUDART_LIBRARY=/usr/local/cuda/lib64/libcudart.so \
+        .. \
+&&  make -j"$(nproc)" \
+&&  make install \
+&&  cd /tmp \
+&&  rm -rf ./*
+ENV OpenCV_DIR=${CMAKE_INSTALL_PREFIX}/share/OpenCV
+
+# DBoW2
+# hadolint ignore=DL3003
+RUN git clone https://github.com/shinsumicco/DBoW2.git \
+&&  cd DBoW2 \
+&&  mkdir -p build \
+&&  cd build \
+&&  cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} \
+        .. \
+&&  make -j"$(nproc)" \
+&&  make install \
+&&  cd /tmp \
+&&  rm -rf ./*
+ENV DBoW2_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/DBoW2
+
+# Pangolin
+# hadolint ignore=DL3003
+RUN git clone https://github.com/stevenlovegrove/Pangolin.git \
+&&  cd Pangolin \
+&&  git checkout ad8b5f83222291c51b4800d5a5873b0e90a0cf81  \
+&&  sed -i -e "193,198d" ./src/utils/file_utils.cpp \
+&&  mkdir -p build \
+&&  cd build \
+&&  cmake \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX} \
+        -DBUILD_EXAMPLES=OFF \
+        -DBUILD_PANGOLIN_DEPTHSENSE=OFF \
+        -DBUILD_PANGOLIN_FFMPEG=OFF \
+        -DBUILD_PANGOLIN_LIBDC1394=OFF \
+        -DBUILD_PANGOLIN_LIBJPEG=OFF \
+        -DBUILD_PANGOLIN_LIBOPENEXR=OFF \
+        -DBUILD_PANGOLIN_LIBPNG=OFF \
+        -DBUILD_PANGOLIN_LIBREALSENSE=OFF \
+        -DBUILD_PANGOLIN_LIBREALSENSE2=OFF \
+        -DBUILD_PANGOLIN_LIBTIFF=OFF \
+        -DBUILD_PANGOLIN_LIBUVC=OFF \
+        -DBUILD_PANGOLIN_LZ4=OFF \
+        -DBUILD_PANGOLIN_OPENNI=OFF \
+        -DBUILD_PANGOLIN_OPENNI2=OFF \
+        -DBUILD_PANGOLIN_PLEORA=OFF \
+        -DBUILD_PANGOLIN_PYTHON=OFF \
+        -DBUILD_PANGOLIN_TELICAM=OFF \
+        -DBUILD_PANGOLIN_TOON=OFF \
+        -DBUILD_PANGOLIN_UVC_MEDIAFOUNDATION=OFF \
+        -DBUILD_PANGOLIN_V4L=OFF \
+        -DBUILD_PANGOLIN_VIDEO=OFF \
+        -DBUILD_PANGOLIN_ZSTD=OFF \
+        -DBUILD_PYPANGOLIN_MODULE=OFF \
+        .. \
+&&  make -j"$(nproc)" \
+&&  make install \
+&&  cd /tmp \
+&&  rm -rf ./*
+ENV Pangolin_DIR=${CMAKE_INSTALL_PREFIX}/lib/cmake/Pangolin
+
+# Build OpenVSLAM
+ARG OPENVSLAM_COMMIT=7f1b2bae2e938ee930e31316db44ed47a300095d
+# hadolint ignore=DL3003
+RUN git clone https://github.com/xdspacelab/openvslam.git /tmp/openvslam \
+&&  mkdir -p /tmp/openvslam/build \
+&&  cd /tmp/openvslam/build \
+&&  git checkout $OPENVSLAM_COMMIT \
+&&  cmake \
+        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+        -DBUILD_WITH_MARCH_NATIVE=OFF \
+        -DUSE_PANGOLIN_VIEWER=ON \
+        -DUSE_SOCKET_PUBLISHER=OFF \
+        -DBOW_FRAMEWORK=DBoW2 \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_EXAMPLES=OFF \
+        -DINSTALL_PANGOLIN_VIEWER=ON \
+        .. \
+&&  make -j"$(nproc)" \
+&&  make install \
+&&  rm -rf ./*
+
+# Install MYNT EYE S SDK
+# hadolint ignore=DL3003
+RUN git clone https://github.com/slightech/MYNT-EYE-S-SDK.git mynt_eye_s_sdk \
+&&  cd /tmp/mynt_eye_s_sdk \
+&&  make install \
+&&  rm -rf ./*
+
+# Install librealsense
+# hadolint ignore=DL3008
+RUN apt-get update -y -qq \
+&&  apt-get install -y -qq --no-install-recommends dirmngr gpg-agent \
+&&  rm -rf /var/lib/apt/lists/* \
+&&  ( \
+        apt-key adv \
+            --keyserver keys.gnupg.net \
+            --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE \
+    ||  apt-key adv \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-key F6E65AC044F831AC80A06380C8B3A55A6F3EFCDE \
+    ) \
+&&  add-apt-repository "deb http://realsense-hw-public.s3.amazonaws.com/Debian/apt-repo bionic main" -u \
+&&  apt-get update -y -qq \
+&&  apt-get install -y -qq --no-install-recommends \
+        librealsense2-dev \
+        librealsense2-dbg \
+&&  apt-get remove -y dirmngr gpg-agent \
+&&  apt-get autoremove -y -qq \
+&&  rm -rf /var/lib/apt/lists/*
+
+# nvidia-container-runtime
+ENV NVIDIA_VISIBLE_DEVICES ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
+# Cleanup
+RUN rm -rf /tmp/*
+
+WORKDIR /
