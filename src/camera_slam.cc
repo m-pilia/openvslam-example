@@ -53,9 +53,11 @@ int main(int argc, char* argv[])
         return EXIT_FAILURE;
     }
     if (!vocab_file_path->is_set() || !config_file_path->is_set() || !camera_model->is_set()) {
-        std::cerr << "invalid arguments" << std::endl;
-        std::cerr << std::endl;
-        std::cerr << op << std::endl;
+        std::cerr << "Configuration file, vocabulary file, "
+                  << "and camera model must be specified as arguments"
+                  << std::endl << std::endl
+                  << op
+                  << std::endl;
         return EXIT_FAILURE;
     }
     if (!localization->is_set() && !output_map_db_path->is_set()) {
