@@ -1,0 +1,62 @@
+#==============#
+# Camera Model #
+#==============#
+
+Camera.name: "ZED 3"
+Camera.setup: "stereo"
+Camera.model: "perspective"
+
+Camera.fps: 30.0
+Camera.cols: 1280
+Camera.rows: 720
+
+Camera.fx: 691.08
+Camera.fy: 691.08
+Camera.cx: 716.821
+Camera.cy: 401.667
+
+Camera.k1: 0.0
+Camera.k2: 0.0
+Camera.p1: 0.0
+Camera.p2: 0.0
+Camera.k3: 0.0
+Camera.focal_x_baseline: 82.9296
+
+Camera.color_order: "RGB"
+
+#================#
+# ORB Parameters #
+#================#
+
+Feature.max_num_keypoints: 2000
+Feature.scale_factor: 1.2
+Feature.num_levels: 8
+Feature.ini_fast_threshold: 12
+Feature.min_fast_threshold: 7
+
+#=====================#
+# Tracking Parameters #
+#=====================#
+
+depth_threshold: 40
+
+#========================#
+# Initializer Parameters #
+#========================#
+
+Initializer.num_min_triangulated_pts: 100
+
+#===========================#
+# PangolinViewer Parameters #
+#===========================#
+
+PangolinViewer.keyframe_size: 1.2
+PangolinViewer.keyframe_line_width: 1
+PangolinViewer.graph_line_width: 2
+PangolinViewer.point_size: 2
+PangolinViewer.camera_size: 0.8
+PangolinViewer.camera_line_width: 3
+# PangolinViewer.viewpoint_x: 0.0
+# PangolinViewer.viewpoint_y: -300
+# PangolinViewer.viewpoint_z: -0.1
+# PangolinViewer.viewpoint_f: 2800
