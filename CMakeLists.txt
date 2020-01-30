@@ -3,6 +3,8 @@ project(slam LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
 
+set(CAMERA_SLAM_WITH_ZED OFF CACHE BOOL "Build support for ZED camera (requires CUDA)")
+
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 add_definitions(-DUSE_PANGOLIN_VIEWER)
@@ -28,14 +30,18 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(yaml-cpp REQUIRED)
 include_directories(${yaml-cpp_INCLUDE_DIRS})
 
-find_package(ZED 3 REQUIRED)
-include_directories(${ZED_INCLUDE_DIRS})
-link_directories(${ZED_LIBRARY_DIR})
-set(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_NPP_LIBRARIES_ZED})
+if(${CAMERA_SLAM_WITH_ZED})
+    add_definitions(-DCAMERA_SLAM_WITH_ZED)
 
-find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
-include_directories(${CUDA_INCLUDE_DIRS})
-link_directories(${CUDA_LIBRARY_DIRS})
+    find_package(ZED 3 REQUIRED)
+    include_directories(${ZED_INCLUDE_DIRS})
+    link_directories(${ZED_LIBRARY_DIR})
+    set(ZED_LIBS ${ZED_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${CUDA_CUDART_LIBRARY} ${CUDA_NPP_LIBRARIES_ZED})
+
+    find_package(CUDA ${ZED_CUDA_VERSION} EXACT REQUIRED)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    link_directories(${CUDA_LIBRARY_DIRS})
+endif()
 
 find_package(realsense2 REQUIRED )
 include_directories(include ${realsense_INCLUDE_DIR})

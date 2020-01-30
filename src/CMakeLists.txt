@@ -13,9 +13,14 @@ target_sources(camera_slam PRIVATE
         stereo_camera.cpp
         stereo_camera.hpp
         stereo_slam.hpp
-        zed_camera.cpp
-        zed_camera.hpp
         )
+
+if(CAMERA_SLAM_WITH_ZED)
+    target_sources(camera_slam PRIVATE
+            zed_camera.cpp
+            zed_camera.hpp
+            )
+endif()
 
 foreach(EXECUTABLE_TARGET IN LISTS EXECUTABLE_TARGETS)
     set_target_properties(${EXECUTABLE_TARGET} PROPERTIES

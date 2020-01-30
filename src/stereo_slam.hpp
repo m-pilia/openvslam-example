@@ -2,9 +2,12 @@
 
 #include "stack_trace.hpp"
 
-#include "zed_camera.hpp"
 #include "realsense_camera.hpp"
 #include "mynteye_camera.hpp"
+
+#if CAMERA_SLAM_WITH_ZED
+    #include "zed_camera.hpp"
+#endif // CAMERA_SLAM_WITH_ZED
 
 #include <pangolin_viewer/viewer.h>
 

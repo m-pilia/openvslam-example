@@ -1,9 +1,12 @@
 #include "stereo_slam.hpp"
 #include "stack_trace.hpp"
 
-#include "zed_camera.hpp"
 #include "realsense_camera.hpp"
 #include "mynteye_camera.hpp"
+
+#if CAMERA_SLAM_WITH_ZED
+    #include "zed_camera.hpp"
+#endif // CAMERA_SLAM_WITH_ZED
 
 #include <iostream>
 
@@ -12,10 +15,16 @@
 
 int main(int argc, char* argv[])
 {
+#if CAMERA_SLAM_WITH_ZED
+    std::string camera_model_help = "camera model (ZED, MYNT, RealSense)";
+#else
+    std::string camera_model_help = "camera model (MYNT, RealSense)";
+#endif // CAMERA_SLAM_WITH_ZED
+
     // create options
     popl::OptionParser op("Allowed options");
     auto help = op.add<popl::Switch>("h", "help", "produce help message");
-    auto camera_model = op.add<popl::Value<std::string>>("m", "camera-model", "camera model (ZED, MYNT, RealSense)");
+    auto camera_model = op.add<popl::Value<std::string>>("m", "camera-model", camera_model_help);
     auto vocab_file_path = op.add<popl::Value<std::string>>("v", "vocab", "vocabulary file path");
     auto config_file_path = op.add<popl::Value<std::string>>("c", "config", "config file path");
     auto input_video_file_path = op.add<popl::Value<std::string>>("", "input-video", "input video file path", "");
@@ -94,7 +103,11 @@ int main(int argc, char* argv[])
     // Run SLAM
     try {
         if (camera_model->value() == "ZED") {
+#if CAMERA_SLAM_WITH_ZED
             std::make_from_tuple<CameraSlam::StereoSLAM<CameraSlam::ZedCamera>>(args);
+#else
+            throw std::runtime_error("This build does not support the ZED camera");
+#endif // CAMERA_SLAM_WITH_ZED
         }
         else if (camera_model->value() == "MYNT") {
             std::make_from_tuple<CameraSlam::StereoSLAM<CameraSlam::MyntEyeCamera>>(args);
