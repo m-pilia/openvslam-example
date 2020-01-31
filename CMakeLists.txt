@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.8)
 project(slam LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_NO_SYSTEM_FROM_IMPORTED ON)
