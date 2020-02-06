@@ -62,9 +62,30 @@ cmake .. -DCAMERA_SLAM_WITH_ZED=OFF # change to ON to build with support for the
 make
 ```
 
-Run:
+# Usage
+
+To view the available arguments, run:
 ```
 ./camera_slam --help
+```
+
+Example mapping session:
+```
+./camera_slam \
+        -m RealSense \
+        -c ../param/realsense_stereo.yaml \
+        -v ../third_party/vocab/orb_vocab.dbow2 \
+        -output-map-db map.msg
+```
+
+Example localisation session:
+```
+./camera_slam \
+        --localization \
+        -m RealSense \
+        -c ../param/realsense_stereo.yaml \
+        -v ../third_party/vocab/orb_vocab.dbow2 \
+        -input-map-db map.msg
 ```
 
 # Point cloud visualisation
