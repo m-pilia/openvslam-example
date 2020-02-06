@@ -7,6 +7,8 @@ This repository contains a simple example of SLAM setup, using
 [OpenVSLAM](https://github.com/xdspacelab/openvslam.git) with different stereo
 cameras (ZED, RealSense, MYNT EYE).
 
+![](https://user-images.githubusercontent.com/8300317/73919218-cb9f5800-48cb-11ea-9b6f-78c692804927.gif)
+
 # Caveat emptor
 - This package is not meant as production-ready code, but rather as a simple
   example to test different cameras in real-time with OpenVSLAM. The
