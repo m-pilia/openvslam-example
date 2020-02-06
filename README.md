@@ -34,9 +34,12 @@ configuration file), RGBD mode (D435, setting frame rate, resolution, and
 `StereoRectifier.model: fisheye`). Please refer to the configuration files in
 the `./param` folder for an example.
 
-An ORB vocabulary is also required. A pre-built vocabulary [can be
-downloaded](https://openvslam.readthedocs.io/en/master/simple_tutorial.html)
-from the OpenVSLAM project.
+An ORB vocabulary in DBoW2 format is also required. A pre-built vocabulary [is
+available](https://drive.google.com/open?id=1wUPb328th8bUqhOk-i8xllt5mgRW4n84)
+from [the OpenVSLAM
+project](https://openvslam.readthedocs.io/en/master/example.html), and a copy
+is attached as
+[third_party/vocab/orb_vocab.dbow2](https://github.com/m-pilia/openvslam-example/blob/master/third_party/vocab/orb_vocab.dbow2).
 
 # Native build
 
@@ -45,7 +48,7 @@ Requires [CMake](https://cmake.org/) >= 3.8 and [gcc](https://gcc.gnu.org/) >= 7
 Install the dependencies by following upstream instructions:
 - [OpenVSLAM](https://openvslam.readthedocs.io/en/master/installation.html).
   Note that OpenVSLAM requires [OpenCV](https://github.com/opencv/opencv) >= 3.3,
-  and MYNT-EYE-S-SDK requires OpenCV < 4.0.
+  and MYNT-EYE-S-SDK requires OpenCV &lt; 4.0.
 - [MYNT-EYE-S-SDK](https://mynt-eye-s-sdk.readthedocs.io/en/latest/src/sdk/install_ubuntu_src.html)
   2.5 (build from source to avoid binary conflicts with OpenCV).
 - [ZED SDK](https://www.stereolabs.com/developers/release) 3.0 (optional, only for ZED camera, requires CUDA).
