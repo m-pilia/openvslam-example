@@ -11,9 +11,9 @@ cameras (ZED, RealSense, MYNT EYE).
 
 # Caveat emptor
 - This package is not meant as production-ready code, but rather as a simple
-  example to test different cameras in real-time with OpenVSLAM. The
-  implementation is not robust, testing is minimal, and many features have a
-  stub or oversimplified implementation.
+  example to test different cameras in real-time. The implementation is not
+  robust, testing is minimal, and many features have a stub or oversimplified
+  implementation.
 - The ZED module was not tested on hardware after refactoring and porting to
   version 3.0 of the ZED SDK, so it is possible that it does not work
   properly in its current state.
@@ -21,16 +21,16 @@ cameras (ZED, RealSense, MYNT EYE).
 # Configuration
 
 The `camera_slam` executable requires a configuration file in the OpenVSLAM
-format. The main difference is that the configuration does not require to
+format. The main difference is that the configuration does not need to
 contain the calibration parameters, that will be directly read from the
-camera, and any calibration parameter the file will be ignored. Example
+camera (any calibration parameter the file will be ignored). Example
 configurations are provided in the `param` folder.
 
-When the camera supports multiple resolutions and frame rates, the settings
-from the configuration file will be applied. The RealSense devices can be
-used either in stereo mode (D435, setting frame rate and resolution in the
-configuration file), RGBD mode (D435, setting frame rate, resolution, and
-`Camera.setup: RGBD`), or stereo fisheye (T265 setting
+When a camera supports multiple resolutions or frame rates (e.g. ZED or D435),
+the desired values can be specified in the configuration file. The RealSense
+devices can be used either in stereo mode (D435, setting frame rate and
+resolution in the configuration file), RGBD mode (D435, setting frame rate,
+resolution, and `Camera.setup: RGBD`), or stereo fisheye (T265, setting
 `StereoRectifier.model: fisheye`). Please refer to the configuration files in
 the `./param` folder for an example.
 
@@ -46,13 +46,16 @@ is attached as
 Requires [CMake](https://cmake.org/) >= 3.8 and [gcc](https://gcc.gnu.org/) >= 7.2.
 
 Install the dependencies by following upstream instructions:
-- [OpenVSLAM](https://openvslam.readthedocs.io/en/master/installation.html).
-  Note that OpenVSLAM requires [OpenCV](https://github.com/opencv/opencv) >= 3.3,
-  and MYNT-EYE-S-SDK requires OpenCV &lt; 4.0.
+- [OpenVSLAM](https://openvslam.readthedocs.io/en/master/installation.html)
+  compiled with `-DINSTALL_PANGOLIN_VIEWER=ON`. If building its dependencies,
+  note that OpenVSLAM requires [OpenCV](https://github.com/opencv/opencv) >=
+  3.3, and MYNT-EYE-S-SDK requires OpenCV &lt; 4.0.
 - [MYNT-EYE-S-SDK](https://mynt-eye-s-sdk.readthedocs.io/en/latest/src/sdk/install_ubuntu_src.html)
-  2.5 (build from source to avoid binary conflicts with OpenCV).
-- [ZED SDK](https://www.stereolabs.com/developers/release) 3.0 (optional, only for ZED camera, requires CUDA).
-- [librealsense](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md) (recommended: 2.32.0).
+  2.5 (build from source to avoid binary conflicts due to different versions of OpenCV).
+- [ZED SDK](https://www.stereolabs.com/developers/release) 3.0 (optional, only
+  for ZED camera; requires CUDA and a CUDA-enabled GPU on the host).
+- [librealsense](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md)
+  (recommended version: 2.32.0).
 
 Build:
 ```
@@ -75,7 +78,7 @@ Example mapping session:
         -m RealSense \
         -c ../param/realsense_stereo.yaml \
         -v ../third_party/vocab/orb_vocab.dbow2 \
-        -output-map-db map.msg
+        --output-map-db map.msg
 ```
 
 Example localisation session:
@@ -85,7 +88,7 @@ Example localisation session:
         -m RealSense \
         -c ../param/realsense_stereo.yaml \
         -v ../third_party/vocab/orb_vocab.dbow2 \
-        -input-map-db map.msg
+        --input-map-db map.msg
 ```
 
 # Point cloud visualisation
